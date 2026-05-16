@@ -10,8 +10,10 @@ public class PlayerRage : MonoBehaviour
     [Header("Buff Settings")]
     public float normalSpeed = 5f;
     public float rageSpeed = 9f;
-    public Color normalColor = new Color(0.09f, 0.32f, 0.53f); // Твой синий
-    public Color rageColor = Color.red;
+
+    // МЕНЯЕМ ЦВЕТА ЗДЕСЬ:
+    public Color normalColor = Color.white; // Базовый цвет теперь чисто белый
+    public Color rageColor = new Color(1f, 0.35f, 0.35f); // Светло-красный (сочный неоновый оттенок)
 
     private PlayerController moveScript;
     private SpriteRenderer sprite;

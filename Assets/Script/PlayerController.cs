@@ -3,41 +3,51 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     [Header("Movement Settings")]
-    public float moveSpeed = 5f; // Эта переменная будет меняться скриптом PlayerRage
+    public float moveSpeed = 5f;
 
     private Rigidbody2D rb;
     private Vector2 moveInput;
+    private Animator anim;
+    private SpriteRenderer spriteRenderer;
 
     void Start()
     {
-        // Получаем ссылку на компонент физики
         rb = GetComponent<Rigidbody2D>();
-
-        // Убедись, что гравитация выключена для Top-Down игры
-        if (rb != null)
-        {
-            rb.gravityScale = 0f;
-            // Чтобы персонаж не вращался при столкновениях
-            rb.freezeRotation = true;
-        }
+        anim = GetComponent<Animator>();
+        spriteRenderer = GetComponent<SpriteRenderer>();
     }
 
     void Update()
     {
-        // Считываем ввод от игрока (WASD или стрелки)
+        // Получаем ввод движения (WASD или стрелочки)
         moveInput.x = Input.GetAxisRaw("Horizontal");
         moveInput.y = Input.GetAxisRaw("Vertical");
 
-        // Нормализуем вектор, чтобы по диагонали не бегал быстрее
-        moveInput = moveInput.normalized;
+        // Передаем направление в Blend Tree, только когда игрок идет
+        if (moveInput.x != 0 || moveInput.y != 0)
+        {
+            anim.SetFloat("MoveX", moveInput.x);
+            anim.SetFloat("MoveY", moveInput.y);
+
+            // Логика отзеркаливания: меняем только при движении по горизонтали
+            if (moveInput.x < 0)
+            {
+                spriteRenderer.flipX = true; // Разворот влево
+            }
+            else if (moveInput.x > 0)
+            {
+                spriteRenderer.flipX = false; // Разворот вправо
+            }
+        }
+
+        // Передаем общую скорость, чтобы переключать Idle и Walk дерева
+        float moveMagnitude = moveInput.sqrMagnitude;
+        anim.SetFloat("Speed", moveMagnitude);
     }
 
     void FixedUpdate()
     {
-        // Двигаем персонажа через физику
-        if (rb != null)
-        {
-            rb.MovePosition(rb.position + moveInput * moveSpeed * Time.fixedDeltaTime);
-        }
+        // Физическое перемещение Rigidbody2D с нормализацией вектора (чтобы не бегал быстрее по диагонали)
+        rb.MovePosition(rb.position + moveInput.normalized * moveSpeed * Time.fixedDeltaTime);
     }
 }

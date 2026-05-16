@@ -1,15 +1,28 @@
 using UnityEngine;
+using System.Collections;
 
 public class DestructibleObject : MonoBehaviour
 {
     public int health = 2;
 
+    private bool isShaking = false;
+    private Vector3 originalLocalPosition;
+
+    void Start()
+    {
+        // Запоминаем точную стартовую локальную позицию один раз при старте
+        originalLocalPosition = transform.localPosition;
+    }
+
     public void TakeDamage(int damage)
     {
         health -= damage;
 
-        // Запускаем тряску самого ящика
-        StartCoroutine(HitShake());
+        // Запускаем тряску, только если объект уже не трясется
+        if (!isShaking && gameObject.activeInHierarchy)
+        {
+            StartCoroutine(HitShake());
+        }
 
         if (health <= 0)
         {
@@ -23,14 +36,20 @@ public class DestructibleObject : MonoBehaviour
         Destroy(gameObject);
     }
 
-    System.Collections.IEnumerator HitShake()
+    IEnumerator HitShake()
     {
-        Vector3 origin = transform.position;
+        isShaking = true;
+
+        // Трясем относительно начальной локальной позиции
         for (int i = 0; i < 5; i++)
         {
-            transform.position = origin + (Vector3)Random.insideUnitCircle * 0.05f;
+            Vector3 randomOffset = (Vector3)Random.insideUnitCircle * 0.05f;
+            transform.localPosition = originalLocalPosition + randomOffset;
             yield return new WaitForSeconds(0.02f);
         }
-        transform.position = origin;
+
+        // Гарантированно возвращаем ящик строго на его законное место
+        transform.localPosition = originalLocalPosition;
+        isShaking = false;
     }
 }

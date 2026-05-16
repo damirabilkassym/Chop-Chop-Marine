@@ -1,5 +1,6 @@
 using UnityEngine;
-using UnityEngine.SceneManagement; // Нужно для перезагрузки игры
+using UnityEngine.SceneManagement;
+using System.Collections; // Нужно для работы Корутин (задержки)
 
 public class PlayerHealth : MonoBehaviour
 {
@@ -7,17 +8,28 @@ public class PlayerHealth : MonoBehaviour
     public int currentHealth;
 
     [Header("UI Settings")]
-    public GameObject gameOverScreen; // Сюда перетащим наш Canvas
+    public GameObject gameOverScreen; // Наш Canvas Game Over
+
+    private Animator anim;
+    private PlayerController moveScript;
+    private Rigidbody2D rb;
+    private bool isDead = false;
 
     void Start()
     {
         currentHealth = maxHealth;
+        anim = GetComponent<Animator>();
+        moveScript = GetComponent<PlayerController>();
+        rb = GetComponent<Rigidbody2D>();
+
         if (gameOverScreen != null)
-            gameOverScreen.SetActive(false); // Прячем экран при старте
+            gameOverScreen.SetActive(false);
     }
 
     public void TakeDamage(int damage)
     {
+        if (isDead) return; // Если уже мертв, урон не принимаем
+
         currentHealth -= damage;
 
         if (CameraShake.Instance != null)
@@ -31,22 +43,41 @@ public class PlayerHealth : MonoBehaviour
 
     void Die()
     {
+        isDead = true;
         Debug.Log("Морпех погиб...");
 
-        // 1. Показываем экран Game Over
+        // 1. Отключаем управление и физику, чтобы мертвый морпех не бегал
+        if (moveScript != null) moveScript.enabled = false;
+        if (rb != null) rb.velocity = Vector2.zero;
+
+        // 2. Включаем триггер смерти в Аниматоре
+        if (anim != null)
+        {
+            anim.SetTrigger("Die");
+        }
+
+        // 3. Запускаем задержку перед появлением экрана Game Over
+        StartCoroutine(GameOverSequence());
+    }
+
+    IEnumerator GameOverSequence()
+    {
+        // Ждем 1.5 секунды, пока проиграется анимация падения
+        yield return new WaitForSeconds(1.5f);
+
+        // Показываем экран смерти и останавливаем мир
         if (gameOverScreen != null)
             gameOverScreen.SetActive(true);
 
-        // 2. Останавливаем время в игре
         Time.timeScale = 0f;
     }
 
-    // Метод для перезагрузки (можно вызвать кнопкой или клавишей)
     void Update()
     {
-        if (currentHealth <= 0 && Input.GetKeyDown(KeyCode.R))
+        // Перезагрузка сцены на R, если игрок мертв
+        if (isDead && Input.GetKeyDown(KeyCode.R))
         {
-            Time.timeScale = 1f; // Обязательно возвращаем время в норму!
+            Time.timeScale = 1f;
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
     }
